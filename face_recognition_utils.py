@@ -11,14 +11,14 @@ def load_known_faces():
     known_face_names = []
 
     for file in os.listdir(DATASET_PATH):
-        if file.endswith(".jpg") or file.endswith(".png"):
+        if file.endswith((".jpg", ".jpeg", ".png")):
             image_path = os.path.join(DATASET_PATH, file)
             image = face_recognition.load_image_file(image_path)
             encodings = face_recognition.face_encodings(image)
 
-            if encodings:  # Ensure face encoding exists
+            if encodings:  # Ensure a face encoding exists
                 known_face_encodings.append(encodings[0])
-                known_face_names.append(file.split("_")[0])  # Extract name from file
+                known_face_names.append(file.split("_")[0])  # Extract name from filename
 
     return known_face_encodings, known_face_names
 
@@ -30,14 +30,17 @@ def recognize_face(image_path, known_face_encodings, known_face_names):
 
     results = []
     for face_encoding in face_encodings:
-        matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
-        name = "Unknown"
+        if known_face_encodings:  # Ensure known faces exist
+            matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
+            face_distances = face_recognition.face_distance(known_face_encodings, face_encoding)
+            best_match_index = np.argmin(face_distances) if face_distances.size > 0 else None
 
-        face_distances = face_recognition.face_distance(known_face_encodings, face_encoding)
-        best_match_index = np.argmin(face_distances) if face_distances.size > 0 else None
-
-        if best_match_index is not None and matches[best_match_index]:
-            name = known_face_names[best_match_index]
+            if best_match_index is not None and matches and matches[best_match_index]:
+                name = known_face_names[best_match_index]
+            else:
+                name = "Unknown"
+        else:
+            name = "Unknown"
 
         results.append(name)
 
